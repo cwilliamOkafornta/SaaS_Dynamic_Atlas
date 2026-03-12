@@ -1,0 +1,47 @@
+# Virtual Environment
+Include/
+Lib/
+Scripts/
+etc/
+share/
+pyvenv.cfg
+.venv/
+venv/
+env/
+ENV/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Project Output (Analysis Results)
+output/
+*.png
+*.csv
+*.xlsx
+*.xls
+
+# OS Specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Gemini CLI
+.gemini/
+.geminiignore
+GEMINI.md
+*.gemini-cli-meta*
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo

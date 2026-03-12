@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>SaaS Atlas | Professional Data Portal</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.39.0/build/stlite.css" />
+    <style>
+        body { background-color: #f0f2f5; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #root { height: 100vh; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.39.0/build/stlite.js"></script>
+    <script>
+      stlite.mount({
+        requirements: ["pandas", "numpy", "matplotlib", "seaborn", "scipy", "scikit-learn", "openpyxl"],
+        entrypoint: "app.py",
+        files: {
+          "app.py": `
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.optimize import curve_fit
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.svm import SVR
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+from sklearn.cluster import KMeans
+import os
+import io
+import warnings
+import sys
+
+# --- Global Configurations ---
+warnings.filterwarnings("ignore")
+sns.set_theme(style="whitegrid")
+plt.rcParams['figure.figsize'] = (10, 6)
+
+# --- UI Configuration ---
+st.set_page_config(page_title="SaaS Atlas Dashboard", layout="wide", page_icon="💠")
+
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;600&display=swap');
+    html, body, [class*="css"] { font-family: 'Segoe UI', sans-serif; }
+    .stApp { background-color: #f0f2f5; }
+    .main-header { color: #1f4e79; font-weight: 600; margin-bottom: 20px; }
+    .stTabs [aria-selected="true"] { background-color: #1f4e79 !important; color: white !important; }
+</style>
+""", unsafe_allow_html=True)
+
+# --- Math Core ---
+def sigmoid(t, a, b, t0, k):
+    with np.errstate(over='ignore', invalid='ignore'):
+        return a + (b / (1 + np.exp(-(t - t0) / k)))
+
+def exponential(x, a, b):
+    with np.errstate(over='ignore', invalid='ignore'):
+        return a * (1 - np.exp(-x / b))
+
+def perform_fit(x, y, fit_type, x_range=None):
+    x = np.array(x, dtype=float).flatten()
+    y = np.array(y, dtype=float).flatten()
+    mask = ~np.isnan(x) & ~np.isnan(y)
+    x, y = x[mask], y[mask]
+    if len(x) < 3: return None, None, {"Error": "Insufficient data"}
+    x_s, y_s = x[np.argsort(x)], y[np.argsort(x)]
+    if x_range is not None:
+        x_p = np.linspace(x_range[0], x_range[1], 300)
+    else:
+        x_p = np.linspace(x.min(), x.max(), 300)
+    y_f, params = None, {}
+    try:
+        if fit_type == "Sigmoid":
+            popt, _ = curve_fit(sigmoid, x_s, y_s, p0=[min(y_s), max(y_s)-min(y_s), np.median(x_s), 1.0], maxfev=5000)
+            y_f = sigmoid(x_p, *popt)
+            params = {"a": popt[0], "b": popt[1], "t0": popt[2], "k": popt[3]}
+        elif fit_type == "Exponential":
+            popt, _ = curve_fit(exponential, x_s, y_s, p0=[max(y_s), 50.0], maxfev=5000)
+            y_f = exponential(x_p, *popt)
+            params = {"Amp": popt[0], "T": popt[1]}
+        elif fit_type == "Linear":
+            z = np.polyfit(x_s, y_s, 1); y_f = np.poly1d(z)(x_p)
+            params = {"Slope": z[0]}
+    except Exception as e: params = {"Error": str(e)}
+    return x_p, y_f, params
+
+# --- Sidebar ---
+st.sidebar.subheader("📂 Data Acquisition")
+files = st.sidebar.file_uploader("Upload Batch", type=["csv", "xlsx", "xls"], accept_multiple_files=True)
+all_data = {}
+if files:
+    for f in files:
+        try:
+            if f.name.endswith('.csv'): df = pd.read_csv(f)
+            else: df = pd.read_excel(f, engine='openpyxl')
+            all_data[f.name] = df.dropna()
+        except Exception as e: st.sidebar.error(f"Failed {f.name}")
+
+all_cols = list(set.union(*[set(df.columns) for df in all_data.values()])) if all_data else []
+vx = st.sidebar.selectbox("X-Axis", all_cols)
+vy_sel = st.sidebar.multiselect("Y-Axis", all_cols, default=all_cols[1:2] if len(all_cols)>1 else [])
+files_to_plot = st.sidebar.multiselect("Datasets", list(all_data.keys()), default=list(all_data.keys())[:3])
+show_legend = st.sidebar.checkbox("Show Plot Legend", value=True)
+
+if not all_data:
+    st.markdown("<h1 style='text-align:center; color:#1f4e79; margin-top:150px;'>Atlas Portal Browser</h1>", unsafe_allow_html=True)
+    st.stop()
+
+tabs = st.tabs(["📉 2D Trends", "📊 Statistical Analysis", "🧊 3D Insights", "🔬 Cluster & ML"])
+
+with tabs[0]:
+    p_mode = st.radio("Display Mode", ["Combined (Unified)", "Grid (Split Panels)"], horizontal=True)
+    m_fit = st.selectbox("Fitting Algorithm", ["None", "Sigmoid", "Exponential", "Linear"])
+    show_lines = st.checkbox("Connect Data Points (Lines)", value=True)
+    show_err = st.checkbox("Enable Error Bars")
+    err_col = st.selectbox("SD Source", ["None"] + all_cols) if show_err else None
+    
+    if files_to_plot and vy_sel:
+        fig, ax = plt.subplots(figsize=(10, 6))
+        fit_res = []
+        
+        valid_x = []
+        for fn in files_to_plot:
+            if vx in all_data[fn].columns:
+                valid_x.extend(all_data[fn][vx].tolist())
+        global_x_range = (min(valid_x), max(valid_x)) if valid_x else None
+
+        if p_mode == "Combined (Unified)":
+            for fn in files_to_plot:
+                df = all_data[fn]
+                for y in vy_sel:
+                    if y in df.columns:
+                        if show_err and err_col in df.columns:
+                            ax.errorbar(df[vx], df[y], yerr=df[err_col], fmt='o', label=f"{fn}: {y}", alpha=0.5)
+                        else:
+                            if show_lines:
+                                sns.lineplot(x=df[vx], y=df[y], label=f"{fn}: {y}", marker='o', ax=ax)
+                            else:
+                                sns.scatterplot(x=df[vx], y=df[y], label=f"{fn}: {y}", s=100, ax=ax)
+                        if m_fit != "None":
+                            xp, yf, p = perform_fit(df[vx], df[y], m_fit, x_range=global_x_range)
+                            if yf is not None:
+                                ax.plot(xp, yf, '--', label=f"Fit: {fn}")
+                                p.update({"Dataset": fn, "Y": y})
+                                fit_res.append(p)
+            if show_legend:
+                ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+            st.pyplot(fig)
+        else:
+            num = len(files_to_plot)
+            fig_g, axes = plt.subplots((num+1)//2, 2, figsize=(10, 4*((num+1)//2)), squeeze=False)
+            for i, fn in enumerate(files_to_plot):
+                cur_ax = axes[i//2, i%2]
+                df = all_data[fn]
+                for y in vy_sel:
+                    if y in df.columns:
+                        if show_lines:
+                            sns.lineplot(x=df[vx], y=df[y], label=y, ax=cur_ax)
+                        else:
+                            sns.scatterplot(x=df[vx], y=df[y], label=y, ax=cur_ax)
+                cur_ax.set_title(fn)
+                if show_legend:
+                    cur_ax.legend()
+            plt.tight_layout()
+            st.pyplot(fig_g)
+        if fit_res: st.dataframe(pd.DataFrame(fit_res))
+
+with tabs[1]:
+    target_y = st.selectbox("Compare Feature", vy_sel)
+    if target_y:
+        comp_df = pd.concat([all_data[fn][[target_y]].assign(Dataset=fn) for fn in files_to_plot if target_y in all_data[fn].columns])
+        if not comp_df.empty:
+            fig_s, ax_s = plt.subplots()
+            sns.boxplot(data=comp_df, x='Dataset', y=target_y, ax=ax_s)
+            plt.xticks(rotation=45)
+            st.pyplot(fig_s)
+        else:
+            st.warning("No data found for comparison.")
+
+with tabs[2]:
+    z_ax = st.selectbox("Z-Axis", all_cols, index=min(2, len(all_cols)-1))
+    fig_3 = plt.figure()
+    ax_3 = fig_3.add_subplot(111, projection='3d')
+    for fn in files_to_plot:
+        df = all_data[fn]
+        if all(c in df.columns for c in [vx, vy_sel[0], z_ax]):
+            ax_3.scatter(df[vx], df[vy_sel[0]], df[z_ax], label=fn)
+    if show_legend:
+        ax_3.legend()
+    st.pyplot(fig_3)
+
+with tabs[3]:
+    if len(vy_sel) >= 2:
+        combined = pd.concat([all_data[fn][vy_sel[:2]] for fn in files_to_plot if all(y in all_data[fn].columns for y in vy_sel[:2])])
+        combined = combined.dropna()
+        if not combined.empty:
+            kmeans = KMeans(n_clusters=3).fit(combined)
+            combined['Cluster'] = kmeans.labels_
+            fig_m, ax_m = plt.subplots()
+            sns.scatterplot(data=combined, x=vy_sel[0], y=vy_sel[1], hue='Cluster', ax=ax_m)
+            if not show_legend:
+                ax_m.get_legend().remove()
+            st.pyplot(fig_m)
+        else:
+            st.warning("Insufficient data after removing NaNs.")
+    else:
+        st.warning("Select at least 2 Y-axes features for cluster analysis.")
+      }, document.getElementById("root"));
+    </script>
+  </body>
+</html>`
+        },
+      }, document.getElementById("root"));
+    </script>
+  </body>
+</html>
