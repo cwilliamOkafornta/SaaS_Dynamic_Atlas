@@ -25,8 +25,10 @@ plt.rcParams['figure.figsize'] = (10, 6)
 plt.rcParams['axes.titlesize'] = 16
 plt.rcParams['axes.labelsize'] = 14
 
-# Ensure output directory exists (outside .venv)
-OUTPUT_DIR = os.path.abspath(os.path.join(os.getcwd(), "..", "..", "output"))
+# Ensure output directory exists (relative to app file)
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(APP_DIR)
+OUTPUT_DIR = os.path.join(PROJECT_ROOT, "output")
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
