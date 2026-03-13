@@ -81,8 +81,10 @@ $y = mx + c$
 
 ---
 
-## 🎨 Visualization Controls
-- **High-Resolution Export:** Save any plot at up to **1200 DPI**.
+## 🎨 Visualization & Export Controls
+- **Flexible Export System:** Save plots directly to any folder on your machine using the browser's native **"Save As"** dialog.
+- **Multi-Format Support:** Export high-quality visualizations in **.png**, **.svg** (vector), and **.pdf** formats.
+- **High-Resolution Export:** Support for high-resolution rendering at up to **1200 DPI**.
 - **Custom Coloring:** Individually select colors for every dataset and feature trace via the sidebar color picker.
 - **Exterior Legends:** All plot legends are positioned outside the plot box to maximize data visibility.
 
