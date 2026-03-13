@@ -42,8 +42,8 @@ The **SaaS Atlas Platform** is a professional-grade analytical tool designed for
 ### **Steps**
 1. **Clone the repository:**
    ```bash
-   git clone <your-repository-url>
-   cd <project-folder>
+   git clone https://github.com/cwilliamOkafornta/SaaS_Dynamic_Atlas.git
+   cd SaaS_Dynamic_Atlas
    ```
 
 2. **Install dependencies:**
