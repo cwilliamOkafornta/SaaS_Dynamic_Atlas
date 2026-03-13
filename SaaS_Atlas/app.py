@@ -177,9 +177,9 @@ with st.sidebar.expander("ℹ️ About SaaS Atlas", expanded=False):
 
 st.sidebar.markdown("---")
 
-if st.sidebar.button("🚪 Exit Platform", type="primary", width='stretch'):
-    st.sidebar.warning("Shutting down kernel...")
-    os._exit(0)
+if st.sidebar.button("🔄 Reset / Exit Session", type="primary", width='stretch'):
+    st.session_state.clear()
+    st.rerun()
 
 st.sidebar.subheader("📂 Data Acquisition")
 files = st.sidebar.file_uploader("Upload Batch (CSV, Excel)", type=["csv", "xlsx", "xls"], accept_multiple_files=True)
