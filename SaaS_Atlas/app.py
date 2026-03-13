@@ -319,7 +319,9 @@ with tabs[0]:
         show_ci = st.checkbox("Show CI Band (Linear Advanced)", value=True)
         st.markdown("---")
         save_res = st.selectbox("Resolution (DPI)", [100, 300, 600, 1200], index=1)
-        save_plot = st.button("💾 Save Plot to Output Folder")
+        save_format = st.selectbox("Save Format", ["png", "svg", "pdf"])
+        export_btn_placeholder = st.empty()
+        # save_plot = st.button("💾 Save Plot to Output Folder")
 
     with c2:
         if not files_to_plot or not vy_sel:
@@ -411,11 +413,17 @@ with tabs[0]:
                 if show_legend: ax_mp.legend(bbox_to_anchor=(1.02, 1), loc='upper left')
                 plt.tight_layout()
 
-                if save_plot:
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    fname = os.path.join(OUTPUT_DIR, f"2D_Trend_{timestamp}.png")
-                    fig_mp.savefig(fname, dpi=save_res, bbox_inches='tight')
-                    st.success(f"✅ Plot saved to: {fname} at {save_res} DPI")
+                # Prepare export buffer
+                buf = io.BytesIO()
+                fig_mp.savefig(buf, format=save_format, dpi=save_res, bbox_inches='tight')
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                mime="image/png" if save_format == "png" else "image/svg+xml" if save_format == "svg" else "application/pdf"
+                export_btn_placeholder.download_button(
+                    label=f"💾 Save Plot as {save_format.upper()}",
+                    data=buf.getvalue(),
+                    file_name=f"2D_Trend_{timestamp}.{save_format}",
+                    mime=mime
+                )
             else:
                 # Grid Mode
                 num_plots = len(files_to_plot)
@@ -469,11 +477,17 @@ with tabs[0]:
                     if show_legend: curr_ax.legend(loc='best', fontsize='small')
                 plt.tight_layout()
                 st.pyplot(fig_grid)
-                if save_plot:
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    fname = os.path.join(OUTPUT_DIR, f"2D_Grid_{timestamp}.png")
-                    fig_grid.savefig(fname, dpi=save_res, bbox_inches='tight')
-                    st.success(f"✅ Grid saved to: {fname} at {save_res} DPI")
+
+                # Prepare export buffer
+                buf = io.BytesIO()
+                fig_grid.savefig(buf, format=save_format, dpi=save_res, bbox_inches='tight')
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                export_btn_placeholder.download_button(
+                    label=f"💾 Save Grid as {save_format.upper()}",
+                    data=buf.getvalue(),
+                    file_name=f"2D_Grid_{timestamp}.{save_format}",
+                    mime=f"image/{save_format}" if save_format != "pdf" else "application/pdf"
+                )
             
             if fit_results:
                 st.markdown("#### 🔬 Fitting Parameters")
@@ -488,7 +502,9 @@ with tabs[1]:
     with sc1:
         s_type = st.selectbox("Stat View", ["Statistical Tests ( Welch/ANOVA )", "Boxplot Comparison", "Violin Distribution", "Bar Mean Chart", "Correlation Matrix", "Pie Chart (Relative Volume)"])
         target_y = st.selectbox("Value Column (Numeric)", vy_sel) if vy_sel else None
-        save_stat = st.button("💾 Save Stat Plot")
+        stat_format = st.selectbox("Save Format", ["png", "svg", "pdf"], key="stat_format")
+        stat_export_placeholder = st.empty()
+        # save_stat = st.button("💾 Save Stat Plot")
     with sc2:
         if not files_to_plot or not target_y:
             st.info("Select datasets and a numeric value column to perform analysis.")
@@ -590,12 +606,18 @@ with tabs[1]:
                 
                 plt.xticks(rotation=45)
                 st.pyplot(fig_stat)
-                if save_stat:
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    fname = os.path.join(OUTPUT_DIR, f"Stat_{s_type}_{timestamp}.png")
-                    fig_stat.savefig(fname, dpi=300, bbox_inches='tight')
-                    st.success(f"✅ Saved to: {fname}")
 
+                # Prepare export buffer
+                buf = io.BytesIO()
+                fig_stat.savefig(buf, format=stat_format, dpi=300, bbox_inches='tight')
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                mime="image/png" if stat_format == "png" else "image/svg+xml" if stat_format == "svg" else "application/pdf"
+                stat_export_placeholder.download_button(
+                    label=f"💾 Save Stat Plot as {stat_format.upper()}",
+                    data=buf.getvalue(),
+                    file_name=f"Stat_{s_type}_{timestamp}.{stat_format}",
+                    mime=mime
+                )
 # --- Tab 3: 3D Insights ---
 with tabs[2]:
     st.markdown("<h3 class='main-header'>Spatial Data Analysis (3D)</h3>", unsafe_allow_html=True)
@@ -604,7 +626,9 @@ with tabs[2]:
         z_ax = st.selectbox("Z-Axis", all_cols, index=min(2, len(all_cols)-1))
         plot_lib = st.selectbox("Plotting Library", ["Plotly (Interactive)", "Matplotlib (Static)"])
         plot_type_3d = st.selectbox("3D Plot Type", ["Scatter", "Surface", "Mesh", "Bar"])
-        save_3d = st.button("💾 Save 3D Plot")
+        three_d_format = st.selectbox("Save Format", ["png", "svg", "pdf"], key="3d_format")
+        three_d_export_placeholder = st.empty()
+        # save_3d = st.button("💾 Save 3D Plot")
     
     with c32:
         if plot_lib == "Plotly (Interactive)":
@@ -644,12 +668,18 @@ with tabs[2]:
             ax_3d.set_xlabel(vx); ax_3d.set_ylabel(vy_sel[0]); ax_3d.set_zlabel(z_ax)
             if show_legend: ax_3d.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
             st.pyplot(fig_3d)
-            if save_3d:
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                fname = os.path.join(OUTPUT_DIR, f"3D_Plot_{timestamp}.png")
-                fig_3d.savefig(fname, dpi=300, bbox_inches='tight')
-                st.success(f"✅ Saved to: {fname}")
 
+            # Prepare export buffer
+            buf = io.BytesIO()
+            fig_3d.savefig(buf, format=three_d_format, dpi=300, bbox_inches='tight')
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            mime="image/png" if three_d_format == "png" else "image/svg+xml" if three_d_format == "svg" else "application/pdf"
+            three_d_export_placeholder.download_button(
+                label=f"💾 Save 3D Plot as {three_d_format.upper()}",
+                data=buf.getvalue(),
+                file_name=f"3D_Plot_{timestamp}.{three_d_format}",
+                mime=mime
+            )
 # --- Tab 4: Cluster & ML ---
 with tabs[3]:
     st.markdown("<h3 class='main-header'>Machine Learning & Cluster Analysis</h3>", unsafe_allow_html=True)
