@@ -177,7 +177,7 @@ with st.sidebar.expander("ℹ️ About SaaS Atlas", expanded=False):
 
 st.sidebar.markdown("---")
 
-if st.sidebar.button("🚪 Exit Platform", type="primary", use_container_width=True):
+if st.sidebar.button("🚪 Exit Platform", type="primary", width='stretch'):
     st.sidebar.warning("Shutting down kernel...")
     os._exit(0)
 
@@ -407,7 +407,7 @@ with tabs[0]:
                     legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02),
                     template="plotly_white", hovermode="closest", margin=dict(r=150)
                 )
-                st.plotly_chart(fig_pl, use_container_width=True)
+                st.plotly_chart(fig_pl, width='stretch')
                 
                 ax_mp.set_xlabel(vx); ax_mp.set_ylabel(vy_sel[0] if len(vy_sel)==1 else "Value")
                 if show_legend: ax_mp.legend(bbox_to_anchor=(1.02, 1), loc='upper left')
@@ -492,7 +492,7 @@ with tabs[0]:
             if fit_results:
                 st.markdown("#### 🔬 Fitting Parameters")
                 res_df = pd.DataFrame(fit_results)
-                st.dataframe(res_df, use_container_width=True)
+                st.dataframe(res_df, width='stretch')
                 st.download_button("📥 Export Parameters (CSV)", res_df.to_csv(index=False), "fit_results.csv")
 
 # --- Tab 2: Statistical Analysis ---
@@ -542,7 +542,7 @@ with tabs[1]:
                                 })
                         
                         res_df = pd.DataFrame(result_table)
-                        st.dataframe(res_df, use_container_width=True)
+                        st.dataframe(res_df, width='stretch')
                         
                         # Build Matrix Map
                         map_df = pd.DataFrame(index=cell_types, columns=cell_types, dtype=float)
@@ -551,7 +551,7 @@ with tabs[1]:
                             map_df.loc[row['Group 1'], row['Group 2']] = row['P-Value']
                         
                         st.markdown("#### P-Value Matrix Map")
-                        st.dataframe(map_df, use_container_width=True)
+                        st.dataframe(map_df, width='stretch')
                         
                         # Export Options
                         st.markdown("---")
@@ -652,7 +652,7 @@ with tabs[2]:
                 legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02),
                 margin=dict(l=0, r=100, b=0, t=0)
             )
-            st.plotly_chart(fig_3d_pl, use_container_width=True)
+            st.plotly_chart(fig_3d_pl, width='stretch')
         else:
             fig_3d = plt.figure(figsize=(10, 8))
             ax_3d = fig_3d.add_subplot(111, projection='3d')
@@ -706,7 +706,7 @@ with tabs[4]:
     st.markdown("<h3 class='main-header'>Dataset Inventory</h3>", unsafe_allow_html=True)
     sel_f = st.selectbox("Inspect Dataset", list(all_data.keys()))
     # Data Manager now shows the full table regardless of ignore_nan
-    st.dataframe(all_data[sel_f], use_container_width=True)
+    st.dataframe(all_data[sel_f], width='stretch')
 
 st.markdown("---")
 st.markdown("<p style='text-align:center; color:#999;'>Atlas SaaS Analytics Platform v3.0 | 2026 Enterprise Edition</p>", unsafe_allow_html=True)
