@@ -277,26 +277,26 @@ with header_col2:
 
 tabs = st.tabs(["📉 2D Trends", "📊 Statistical Analysis", "🧊 3D Insights", "🔬 Cluster & ML", "📂 Data Manager"])
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import plotly.express as px
-import plotly.graph_objects as go
-from scipy.optimize import curve_fit
-from scipy.stats import t, ttest_ind, f_oneway
-from sklearn.metrics import r2_score
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.svm import SVR
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import make_pipeline
-from sklearn.cluster import KMeans
-import os
-import io
-import warnings
-from datetime import datetime
-from itertools import combinations
+# import streamlit as st
+# import pandas as pd
+# import numpy as np
+# import matplotlib.pyplot as plt
+# import seaborn as sns
+# import plotly.express as px
+# import plotly.graph_objects as go
+# from scipy.optimize import curve_fit
+# from scipy.stats import t, ttest_ind, f_oneway
+# from sklearn.metrics import r2_score
+# from sklearn.ensemble import RandomForestRegressor
+# from sklearn.svm import SVR
+# from sklearn.preprocessing import StandardScaler
+# from sklearn.pipeline import make_pipeline
+# from sklearn.cluster import KMeans
+# import os
+# import io
+# import warnings
+# from datetime import datetime
+# from itertools import combinations
 
 # --- Tab 1: 2D Trends (The Core Plotting) ---
 with tabs[0]:
